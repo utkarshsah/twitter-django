@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block title %}utkarsh tweet{% endblock %}
+
+{% block content %}
+<h1 class="text-center text-white mt-4">Welcome to Twitter</h1>
+
+<a class="btn btn-primary mb-4" href="{% url 'tweet_create' %}">Create a tweet</a>
+
+<div class="row">
+  {% for tweet in tweets %}
+    <div class="col-md-4 mb-4">
+      <div class="card" style="width: 100%;">
+        {% if tweet.photo %}
+          <img src="{{ tweet.photo.url }}" class="card-img-top" style="cursor: pointer;"
+               onclick="openImageModal('{{ tweet.photo.url }}')" alt="Tweet Image">
+        {% endif %}
+
+        <div class="card-body">
+          <h5 class="card-title">{{ tweet.user.username }}</h5>
+          <p class="card-text">{{ tweet.text }}</p>
+
+          {% if tweet.user == request.user %}
+            <a href="{% url 'tweet_edit' tweet.id %}" class="btn btn-primary">Edit</a>
+            <a href="{% url 'tweet_delete' tweet.id %}" class="btn btn-danger">Delete</a>
+          {% endif %}
+
+          <button id="like-btn-{{ tweet.id }}" class="btn btn-sm {% if user in tweet.likes.all %}btn-danger{% else %}btn-outline-light{% endif %} mt-2"
+                  onclick="toggleLike({{ tweet.id }})">
+            {% if user in tweet.likes.all %}
+              ❤️ Unlike ({{ tweet.total_likes }})
+            {% else %}
+              🤍 Like ({{ tweet.total_likes }})
+            {% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function toggleLike(tweetId) {
+    const response = await fetch(`/api/tweets/${tweetId}/toggle_like/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      credentials: 'same-origin',
+    });
+
+    const data = await response.json();
+    const btn = document.getElementById(`like-btn-${tweetId}`);
+    if (data.liked) {
+      btn.innerHTML = `❤️ Unlike (${data.total_likes})`;
+      btn.classList.remove('btn-outline-light');
+      btn.classList.add('btn-danger');
+    } else {
+      btn.innerHTML = `🤍 Like (${data.total_likes})`;
+      btn.classList.remove('btn-danger');
+      btn.classList.add('btn-outline-light');
+    }
+  }
+</script>
+{% endblock %}
